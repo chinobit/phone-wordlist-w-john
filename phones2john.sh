@@ -8,34 +8,36 @@
 while true
 do
   # (1) prompt user, and read command line argument
-  printf "WARNING...\nThis script will REWRITE your current /etc/john/john.local.conf file\nMake a backup or change script on line 30\n"
-  read -p "Got any phone prefix for me...? " answer ;
+  echo -e "WARNING...\nThis script will REWRITE your current /etc/john/john.local.conf file\n"
+  unset PREARR
+  declare -a PREARR=()
+  read -p "Got any phone prefix for me...? " answer
 
   # (2) handle the input we were given
   case $answer in
-   [yY]* ) read -p "What is the prefix? " PREFIX ;
-           while read -n 1 c; do PREARR+=($c); done  <<< "$PREFIX" ;
-           b=$(( ${#PREARR[@]} ));
-           printf "b equel = $b \n";
-           i=9;
-           printf "i befor loop = $i \n\n"
-           for x in "${PREARR[@]}" ;
-           do
-               if [[ (( $i > $b )) ]]; then
-                 PREARR+="X"
-                 printf "PREARR in loop = ${PREARR[$x]}\n\n";
-                 (( i-- ))
-               fi
-               printf "i in loop = $i\n\n"
-               (( i-- ))
-               if [[ (( $i < $b )) ]]; then break; fi
-           done
-           for x in "${PREARR[@]}"; do printf "${PREARR[$x]}\n"; done
+   [yY]* ) read -p "What is the prefix? " PREFIX
+           echo -e "What is the prefix? \n"
+           while read -n 1 c; do
+              PREARR=(${PREARR[@]} $c)
+           done <<< "$PREFIX"
+           echo -e "THIS IS THE ENTIRE ARRAY? = ${PREFIX[@]}"
            if [ "${PREARR[0]}" != "0" ]; then
-              printf "\nPrefix must start with 0-digit\n" ;
-              exit;
+              echo -e "\nPrefix must start with 0-digit\n" ;
+              break;
            fi
-           printf "Okay, I got your prefix ($PREFIX).\n\n" ;
+           PRILEN=${#PREARR[@]}
+           for i in {0..9}; do
+              if [[ "${PREARR[$i]}" < 0 && "${PREARR[$i]}" > 9 ]] ; then
+                 echo -e "\nOnly digits please. Try again...\n" ;
+                 break;
+              elif [ $i -gt $(( $PRILEN - 1 )) ]; then
+                 PREARR[$i]="X"                 
+              fi
+           done
+           echo -e "\nPREARR with X's now equals = ${PREARR[@]}"
+           echo -e "\nOkay, I got your prefix ($PREFIX).\n\n";
+           echo -e "\nCreating a backup john.local.conf.BU\n"
+           cp /etc/john/john.local.conf /etc/john/john.local.conf.BU.$(date +%F)
 # C CODE HERE
            cat <<EOF > /etc/john/john.local.conf
 [List.External:Filter_$PREFIX]
@@ -98,22 +100,22 @@ MinLen = 10
 MaxLen = 10
 CharCount = 10
 EOF
-           printf "Configuration of /etc/john/john.local.conf is done.\n\n"
-           printf "Generate now $PREFIX dictionary.lst with John the ripper?\n"
+           echo -e "Configuration of /etc/john/john.local.conf is done.\n\n"
+           echo -e "Generate now $PREFIX dictionary.lst with John the ripper?\n"
            read -p "This might take awhile... (Y/N) " answer ;
            case $answer in
             [yY]* ) john --incremental=Phone --external=Filter_$PREFIX --stdout | uniq -s 3 -u > wordlist_$PREFIX\.lst
-                    printf "\nThe file wordlist_$PREFIX\.lst has been generated to current directory\n"
+                    echo -e "\nThe file wordlist_$PREFIX\.lst has been generated to current directory\n"
             ;;
             [nN]* ) exit;;
-            * )     printf "\nNo it is...";;
+            * )     echo -e "\nNo it is...";;
            esac
 #           break;;
            ;;
 
    [nN]* ) exit;;
 
-   * )     printf "\nDude, just enter Y or N, please.";;
+   * )     echo -e "\nDude, just enter Y or N, please.\n\n";;
   esac
 done
 
