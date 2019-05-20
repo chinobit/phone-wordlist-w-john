@@ -1,7 +1,7 @@
 #!/bin/bash
 # This scrip will create a wordlist (dictionary) with Israeli phone numbers.
 # Script usage:
-# sudo phones2john.sh
+# sudo ./phones2john.sh
 #
 # Writing the List.External in /etc/john/john.local.conf
 
@@ -25,18 +25,18 @@ do
               echo -e "\nPrefix must start with 0-digit\n" ;
               break;
            fi
-           PRILEN=${#PREARR[@]}
+           PRELEN=${#PREARR[@]}
            for i in {0..9}; do
               if [[ "${PREARR[$i]}" < 0 && "${PREARR[$i]}" > 9 ]] ; then
                  echo -e "\nOnly digits please. Try again...\n" ;
                  break;
-              elif [ $i -gt $(( $PRILEN - 1 )) ]; then
+              elif [ $i -gt $(( $PRELEN - 1 )) ]; then
                  PREARR[$i]="X"                 
               fi
            done
-           echo -e "\nPREARR with X's now equals = ${PREARR[@]}"
-           echo -e "\nOkay, I got your prefix ($PREFIX).\n\n";
-           echo -e "\nCreating a backup john.local.conf.BU\n"
+           echo -e "\nPREARR with 99 now equals = ${PREARR[@]}"
+           echo -e "Okay, I got your prefix ($PREFIX).\n\n";
+           echo -e "Creating a backup john.local.conf.BU\n"
            cp /etc/john/john.local.conf /etc/john/john.local.conf.BU.$(date +%F)
 # C CODE HERE
            cat <<EOF > /etc/john/john.local.conf
@@ -45,7 +45,7 @@ do
 // The folowing function will modify the generate() function to only generate 10 digit numbers (minlength == maxlength).
 void init()
 {
-        from = '0';
+        from = '$(( $PRELEN - 1 ))';
         to = '9';
         minlength = 10;
         maxlength = 10;
@@ -67,29 +67,17 @@ void init()
 }
 void filter()
 {
-        int prelength, i, c, prechar[10];
-        prelength = ${#PREARR[@]};
+        int prelength, i, c;
+        prelength = $PRELEN;
         i = 0;
-        prechar[0] = ${PREARR[0]};
-        prechar[1] = ${PREARR[1]};
-        prechar[2] = ${PREARR[2]};
-        prechar[3] = ${PREARR[3]};
-        prechar[4] = ${PREARR[4]};
-        prechar[5] = ${PREARR[5]};
-        prechar[6] = ${PREARR[6]};
-        prechar[7] = ${PREARR[7]};
-        prechar[8] = ${PREARR[8]};
-        prechar[9] = ${PREARR[9]};
 
         while (c = word[i++]) {
-          while (word[i] != prechar[i]) {
-//           if ((word[0] != '${PREARR[0]}') || (word[1] != '${PREARR[1]}') || (word[2] != '${PREARR[2]}')) {
+          if (word[i] != '${PREARR[0]}' || word[i] != '${PREARR[1]}' || word[i] != '${PREARR[2]}' || word[i] != '${PREARR[3]}' || word[i] != '${PREARR[4]}' || word[i] != '${PREARR[5]}' || word[i] != '${PREARR[6]}' || word[i] != '${PREARR[7]}' || word[i] != '${PREARR[8]}' || word[i] != '${PREARR[9]}') {
                 word = 0; return;
-//           }
           }
-           if (c < '0' || c > '9' || i > 10) {
+          if (c < '0' || c > '9' || i > 10) {
                 word = 0; return;
-           }
+          }
         }
 }
 
@@ -100,7 +88,7 @@ MinLen = 10
 MaxLen = 10
 CharCount = 10
 EOF
-           echo -e "Configuration of /etc/john/john.local.conf is done.\n\n"
+           echo -e "Configuration of /etc/john/john.local.conf is done.\n"
            echo -e "Generate now $PREFIX dictionary.lst with John the ripper?\n"
            read -p "This might take awhile... (Y/N) " answer ;
            case $answer in
